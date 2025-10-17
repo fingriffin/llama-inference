@@ -1,7 +1,7 @@
 from pathlib import Path
 import yaml
 
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 class InferenceConfig(BaseModel):
     """Configuration for inference"""
@@ -10,9 +10,11 @@ class InferenceConfig(BaseModel):
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")
 
-    @field_validator("output_path")
-    def create_output_path(cls, v):
-        Path(v).mkdir(parents=True, exist_ok=True)
+    @field_validator("output_file")
+    def ensure_output_dir_exists(cls, v: str):
+        """Ensure the parent directory for output_file exists."""
+        output_path = Path(v)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         return v
 
 def load_config(config_path: str) -> InferenceConfig:
