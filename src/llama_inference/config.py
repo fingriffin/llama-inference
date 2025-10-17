@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field, field_validator
 
 class InferenceConfig(BaseModel):
     """Configuration for inference"""
-    model_name: str = Field(..., description="Name of the model to use")
+    base_model: str = Field(..., description="Base model name or path")
+    adapter: str = Field(..., description="Adapter name or path")
     gpus: int = Field(1, description="Number of GPUs to use")
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")

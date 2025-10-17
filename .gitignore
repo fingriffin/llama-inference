@@ -56,3 +56,6 @@ htmlcov/
 # Project specific
 configs/*
 !configs/.gitkeep
+
+models/*
+!models/.gitkeep

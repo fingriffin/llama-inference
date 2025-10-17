@@ -1,9 +1,12 @@
 from loguru import logger
 
 import click
+from transformers import AutoModelForCausalLM
+from peft import PeftModel
 
 from llama_inference.logging import setup_logging
 from llama_inference.config import load_config
+from llama_inference.hf import configure_hf
 
 @click.command()
 @click.argument("config_path")
@@ -35,3 +38,18 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
     except Exception as e:
         logger.error("Failed to load config: ", e)
         raise
+
+    configure_hf(config.base_model)
+
+    logger.info("Loading base model from HF: {}", config.base_model)
+    base = AutoModelForCausalLM.from_pretrained(config.base_model)
+
+    logger.info("Merging adapter with PEFT: {}", config.adapter)
+    model_with_adapter = PeftModel.from_pretrained(
+        base,
+        config.adapter,
+        device_map="auto" if config.gpus > 0 else None,
+    )
+
+    merged = model_with_adapter.merge_and_unload()
+
