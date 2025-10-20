@@ -6,7 +6,7 @@ from peft import PeftModel
 
 from llama_inference.logging import setup_logging
 from llama_inference.config import load_config
-from llama_inference.hf import configure_hf
+from llama_inference.hf import configure_hf, get_token
 
 @click.command()
 @click.argument("config_path")
@@ -40,6 +40,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         raise
 
     configure_hf(config.base_model)
+    get_token()
 
     logger.info("Loading base model from HF: {}", config.base_model)
     base = AutoModelForCausalLM.from_pretrained(config.base_model)
