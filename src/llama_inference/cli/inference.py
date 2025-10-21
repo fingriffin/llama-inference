@@ -67,19 +67,20 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
     )
 
     logger.info("Generating results for {} prompts", len(prompts))
-    outputs = llm.generate(
-        prompts,
-        sampling_params,
-    )
+    outputs = []
+    for example in dataset:
+        messages = example["messages"]  # already [{"role": ..., "content": ...}, ...]
 
-    data = [
-        {"prompt": o.prompt, "text": o.outputs[0].text}
-        for o in outputs
-    ]
+        response = llm.chat(messages, sampling_params)
+        outputs.append({
+            "messages": messages,
+            "response": response.outputs[0].text.strip()
+        })
 
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / "results.json"
 
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(outputs, f, ensure_ascii=False, indent=2)
 
-    logger.info("Results successfully written to {}", output_path)
+    logger.success("Results successfully written to {}", output_path)
