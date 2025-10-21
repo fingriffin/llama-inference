@@ -69,12 +69,20 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
     logger.info("Generating results for {} prompts", len(prompts))
     outputs = []
     for example in dataset:
-        messages = example["messages"]  # already [{"role": ..., "content": ...}, ...]
+        # Use only system and user messages
+        messages = [m for m in example["messages"] if m["role"] != "assistant"]
 
+        # Run chat inference
         response = llm.chat(messages, sampling_params)
+        text = response[0].outputs[0].text.strip()
+
         outputs.append({
             "messages": messages,
-            "response": response.outputs[0].text.strip()
+            "generated_response": text,
+            "reference_response": next(
+                (m["content"] for m in example["messages"] if m["role"] == "assistant"),
+                None,
+            )
         })
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
