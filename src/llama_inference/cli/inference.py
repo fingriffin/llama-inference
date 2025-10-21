@@ -1,12 +1,20 @@
 from loguru import logger
-
+from pathlib import Path
 import click
-from transformers import AutoModelForCausalLM
-from peft import PeftModel
+import json
+
+from huggingface_hub import snapshot_download
+from datasets import load_dataset
+from vllm import LLM, SamplingParams
+from vllm.lora.request import LoRARequest
 
 from llama_inference.logging import setup_logging
 from llama_inference.config import load_config
 from llama_inference.hf import configure_hf, get_token
+
+ROOT_DIR = Path.cwd()
+MODEL_DIR = ROOT_DIR / "models"
+OUTPUT_DIR = ROOT_DIR / "outputs"
 
 @click.command()
 @click.argument("config_path")
@@ -24,7 +32,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
 
         # Override sampling parameters if provided via CLI
         if max_tokens is not None:
-            config.sampling_params.max_tokens = max_tokens
+            config.max_tokens = max_tokens
             logger.info("Overriding max_tokens to: {}", max_tokens)
         if n_gpus is not None:
             config.gpus = n_gpus
@@ -36,21 +44,45 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         print("")
 
     except Exception as e:
-        logger.error("Failed to load config: ", e)
+        logger.error("Failed to load config: {}", e)
         raise
 
     configure_hf(config.base_model)
     get_token()
 
-    logger.info("Loading base model from HF: {}", config.base_model)
-    base = AutoModelForCausalLM.from_pretrained(config.base_model)
+    dataset = load_dataset(config.test_data, split="test")
 
-    logger.info("Merging adapter with PEFT: {}", config.adapter)
-    model_with_adapter = PeftModel.from_pretrained(
-        base,
-        config.adapter,
-        device_map="auto" if config.gpus > 0 else None,
+    prompts = [
+        next(msg["content"] for msg in example["messages"] if msg["role"] == "user")
+        for example in dataset
+    ]
+
+
+    logger.info("Downloading adaptor from HF: {}", config.adaptor)
+    adaptor_path = snapshot_download(repo_id=config.adaptor)
+
+    logger.info("Instantiate base model {}", config.base_model)
+    llm = LLM(model=config.base_model, enable_lora=True)
+
+    sampling_params = SamplingParams(
+        max_tokens=config.max_tokens,
     )
 
-    merged = model_with_adapter.merge_and_unload()
+    logger.info("Generating results for {} prompts", len(config.prompts))
+    outputs = llm.generate(
+        prompts,
+        sampling_params,
+        lora_request=LoRARequest("bush_adaptor", 1, adaptor_path)
+    )
 
+    data = [
+        {"prompt": o.prompt, "text": o.outputs[0].text}
+        for o in outputs
+    ]
+
+    output_path = OUTPUT_DIR / "results.json"
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    logger.info("Results successfully written to {}", output_path)
