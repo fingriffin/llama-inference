@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field, field_validator
 
 class InferenceConfig(BaseModel):
     """Configuration for inference"""
-    base_model: str = Field(..., description="Base model name or path")
-    adapter: str = Field(..., description="Adapter name or path")
+    model: str = Field(..., description="Model name or path")
     gpus: int = Field(1, description="Number of GPUs to use")
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")
+    max_tokens: int = Field(256, description="Maximum tokens to generate per prompt")
 
     @field_validator("output_file")
     def ensure_output_dir_exists(cls, v: str):

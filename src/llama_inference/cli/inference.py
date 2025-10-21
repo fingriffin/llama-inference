@@ -3,10 +3,8 @@ from pathlib import Path
 import click
 import json
 
-from huggingface_hub import snapshot_download
 from datasets import load_dataset
 from vllm import LLM, SamplingParams
-from vllm.lora.request import LoRARequest
 
 from llama_inference.logging import setup_logging
 from llama_inference.config import load_config
@@ -47,7 +45,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         logger.error("Failed to load config: {}", e)
         raise
 
-    configure_hf(config.base_model)
+    configure_hf(config.model)
     get_token()
 
     dataset = load_dataset(config.test_data, split="test")
@@ -57,22 +55,21 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         for example in dataset
     ]
 
-
-    logger.info("Downloading adaptor from HF: {}", config.adaptor)
-    adaptor_path = snapshot_download(repo_id=config.adaptor)
-
-    logger.info("Instantiate base model {}", config.base_model)
-    llm = LLM(model=config.base_model, enable_lora=True)
+    logger.info("Instantiating model {}", config.model)
+    llm = LLM(model=config.model,
+              quantization="bitsandbytes",
+              dtype="bfloat16",
+              max_model_len=4096,
+              )
 
     sampling_params = SamplingParams(
         max_tokens=config.max_tokens,
     )
 
-    logger.info("Generating results for {} prompts", len(config.prompts))
+    logger.info("Generating results for {} prompts", len(prompts))
     outputs = llm.generate(
         prompts,
         sampling_params,
-        lora_request=LoRARequest("bush_adaptor", 1, adaptor_path)
     )
 
     data = [
