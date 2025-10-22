@@ -9,6 +9,7 @@ class InferenceConfig(BaseModel):
     gpus: int = Field(1, description="Number of GPUs to use")
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")
+    quantization: str = Field(..., description="Quantization method to use")
     max_tokens: int = Field(256, description="Maximum tokens to generate per prompt")
 
     @field_validator("output_file")
@@ -16,6 +17,13 @@ class InferenceConfig(BaseModel):
         """Ensure the parent directory for output_file exists."""
         output_path = Path(v)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        return v
+
+    @field_validator("quantization")
+    def validate_quantization(cls, v: str) -> str:
+        """Allow only empty string or '4bit' for quantization."""
+        if v not in ("", "4bit"):
+            raise ValueError("Quantization must be either empty or '4bit'")
         return v
 
 def load_config(config_path: str) -> InferenceConfig:

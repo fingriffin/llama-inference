@@ -55,9 +55,13 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         for example in dataset
     ]
 
+    quantization = None
+    if config.quantization:
+        quantization = "bitsandbytes"
+
     logger.info("Instantiating model {}", config.model)
     llm = LLM(model=config.model,
-              quantization="bitsandbytes",
+              quantization=quantization,
               dtype="bfloat16",
               max_model_len=4096,
               )
