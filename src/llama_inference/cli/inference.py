@@ -62,6 +62,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
     logger.info("Instantiating model {}", config.model)
     llm = LLM(model=config.model,
               quantization=quantization,
+              tensor_parallel_size=config.gpus,
               dtype="bfloat16",
               max_model_len=4096,
               )
