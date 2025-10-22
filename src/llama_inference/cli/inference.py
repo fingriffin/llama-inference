@@ -86,7 +86,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         })
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = OUTPUT_DIR / "results.json"
+    output_path = OUTPUT_DIR / config.output_file
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outputs, f, ensure_ascii=False, indent=2)
