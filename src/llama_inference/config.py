@@ -1,5 +1,6 @@
 from pathlib import Path
 import yaml
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -9,7 +10,7 @@ class InferenceConfig(BaseModel):
     gpus: int = Field(1, description="Number of GPUs to use")
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")
-    quantization: str = Field(..., description="Quantization method to use")
+    quantization: Optional[str] = Field(None, description="Quantization method to use (must be '4bit' if provided)")
     max_tokens: int = Field(256, description="Maximum tokens to generate per prompt")
 
     @field_validator("output_file")
@@ -20,10 +21,10 @@ class InferenceConfig(BaseModel):
         return v
 
     @field_validator("quantization")
-    def validate_quantization(cls, v: str) -> str:
-        """Allow only empty string or '4bit' for quantization."""
-        if v not in ("", "4bit"):
-            raise ValueError("Quantization must be either empty or '4bit'")
+    def validate_quantization(cls, v: Optional[str]) -> Optional[str]:
+        """Allow None or '4bit' for quantization."""
+        if v is not None and v != "4bit":
+            raise ValueError("Quantization must be '4bit' if provided")
         return v
 
 def load_config(config_path: str) -> InferenceConfig:
