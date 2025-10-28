@@ -6,9 +6,9 @@ import json
 from datasets import load_dataset
 from vllm import LLM, SamplingParams
 
-from llama_inference.logging import setup_logging
-from llama_inference.config import load_config
-from llama_inference.hf import configure_hf, get_token
+from voice_inference.logging import setup_logging
+from voice_inference.config import load_config
+from voice_inference.hf import configure_hf, get_token
 
 ROOT_DIR = Path.cwd()
 MODEL_DIR = ROOT_DIR / "models"
@@ -48,7 +48,7 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
     configure_hf(config.model)
     get_token()
 
-    dataset = load_dataset(config.test_data, split="test")
+    dataset = load_dataset(config.test_data, split=config.split)
 
     prompts = [
         next(msg["content"] for msg in example["messages"] if msg["role"] == "user")

@@ -6,8 +6,8 @@ from huggingface_hub import snapshot_download, HfApi, HfFolder
 from loguru import logger
 import os
 
-from llama_inference.logging import setup_logging
-from llama_inference.hf import configure_hf, get_token
+from voice_inference.logging import setup_logging
+from voice_inference.hf import configure_hf, get_token
 
 BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush"

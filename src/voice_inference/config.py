@@ -10,6 +10,7 @@ class InferenceConfig(BaseModel):
     gpus: int = Field(1, description="Number of GPUs to use")
     test_data: str = Field(..., description="Path to the input data file")
     output_file: str = Field(..., description="Path to save the output results")
+    split: str = Field("test", description="Dataset split to use for inference")
     quantization: Optional[str] = Field(None, description="Quantization method to use (must be '4bit' if provided)")
     max_tokens: int = Field(256, description="Maximum tokens to generate per prompt")
 
