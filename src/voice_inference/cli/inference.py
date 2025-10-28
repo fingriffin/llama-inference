@@ -1,18 +1,21 @@
-from loguru import logger
-from pathlib import Path
-import click
-import json
+"""CLI for running inference with vLLM and specified configuration."""
 
+import json
+from pathlib import Path
+
+import click
 from datasets import load_dataset
+from loguru import logger
 from vllm import LLM, SamplingParams
 
-from voice_inference.logging import setup_logging
 from voice_inference.config import load_config
 from voice_inference.hf import configure_hf, get_token
+from voice_inference.logging import setup_logging
 
 ROOT_DIR = Path.cwd()
 MODEL_DIR = ROOT_DIR / "models"
 OUTPUT_DIR = ROOT_DIR / "outputs"
+
 
 @click.command()
 @click.argument("config_path")
@@ -20,7 +23,13 @@ OUTPUT_DIR = ROOT_DIR / "outputs"
 @click.option("--log-file", help="Log file path")
 @click.option("--max-tokens", type=int, help="Override max tokens for generation")
 @click.option("--n-gpus", type=int, help="Number of GPUs to use for inference")
-def main(config_path, log_level, log_file, max_tokens, n_gpus):
+def main(
+    config_path: str,
+    log_level: str,
+    log_file: str,
+    max_tokens: int,
+    n_gpus: int
+) -> None:
     """Run inference with vLLM and specified configuration."""
     setup_logging(log_level, log_file)
 
@@ -60,12 +69,13 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         quantization = "bitsandbytes"
 
     logger.info("Instantiating model {}", config.model)
-    llm = LLM(model=config.model,
-              quantization=quantization,
-              tensor_parallel_size=config.gpus,
-              dtype="bfloat16",
-              max_model_len=4096,
-              )
+    llm = LLM(
+        model=config.model,
+        quantization=quantization,
+        tensor_parallel_size=config.gpus,
+        dtype="bfloat16",
+        max_model_len=4096,
+    )
 
     sampling_params = SamplingParams(
         max_tokens=config.max_tokens,
@@ -81,14 +91,18 @@ def main(config_path, log_level, log_file, max_tokens, n_gpus):
         response = llm.chat(messages, sampling_params)
         text = response[0].outputs[0].text.strip()
 
-        outputs.append({
-            "messages": messages,
-            "generated_response": text,
-            "reference_response": next(
-                (m["content"] for m in example["messages"] if m["role"] == "assistant"),
-                None,
-            )
-        })
+        ref = next(
+            (m["content"] for m in example["messages"] if m["role"] == "assistant"),
+            None,
+        )
+
+        outputs.append(
+            {
+                "messages": messages,
+                "generated_response": text,
+                "reference_response": ref,
+            }
+        )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / config.output_file

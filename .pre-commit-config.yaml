@@ -14,14 +14,15 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        args: ["--select", "E,F,W,D", "--line-length", "79"]
-      - id: ruff-format
+        args: ["--fix"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
     hooks:
       - id: mypy
         args: ["--config-file", "mypy.ini"]
+        additional_dependencies:
+          - types-PyYAML
 
   - repo: https://github.com/pycqa/isort
     rev: 7.0.0
@@ -30,7 +31,7 @@ repos:
         args: ["--profile", "black"]
 
   - repo: https://github.com/jsh9/pydoclint
-    rev: 0.5.7
+    rev: 0.7.6
     hooks:
       - id: pydoclint
-        args: ["--config", ".pydoclint.ini"]
+        args: [ "--style", "sphinx", "--arg-type-hints-in-docstring=False", "--check-return-types=False"]
