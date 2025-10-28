@@ -1,13 +1,14 @@
-"""Merge a QLoRA adapter into its base model in place and push to the Hugging Face Hub."""
+"""Merge an adapter into its base model in place and push to HF Hub."""
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import PeftModel
-from huggingface_hub import snapshot_download, HfApi, HfFolder
-from loguru import logger
 import os
 
-from voice_inference.logging import setup_logging
+from huggingface_hub import HfApi, snapshot_download
+from loguru import logger
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from voice_inference.hf import configure_hf, get_token
+from voice_inference.logging import setup_logging
 
 BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush"
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     base_model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         torch_dtype="bfloat16",
-        device_map={"": 0},     # no auto as want to avoid meta tensors
+        device_map={"": 0},  # no auto as want to avoid meta tensors
     )
 
     # Resize embeddings to match tokenizer

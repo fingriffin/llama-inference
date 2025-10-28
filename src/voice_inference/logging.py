@@ -1,13 +1,27 @@
-from loguru import logger
+"""Logging configuration for style-bench."""
+
 import sys
 
+from loguru import Logger, logger
 
-def setup_logging(level: str = "INFO", log_file: str = None):
-    """Configure logging for style-bench"""
+
+def setup_logging(level: str = "INFO", log_file: str | None = None) -> Logger:
+    """
+    Configure logging for style-bench.
+
+    :param level: Logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR").
+    :param log_file: Optional file path to save logs.
+    :return: Configured logger instance.
+    """
     logger.remove()
 
-    def format_record(record):
-        """Some added pazazz to the log output"""
+    def format_record(record: dict) -> str:
+        """
+        Format log records with icons based on severity level.
+
+        :param record: Log record.
+        :return: Formatted log string.
+        """
         level_icons = {
             "DEBUG": "🔍",
             "INFO": "📝",
