@@ -1057,35 +1057,6 @@ wheels = [
 ]
 
 [[package]]
-name = "llama-inference"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
-    { name = "click" },
-    { name = "datasets" },
-    { name = "hf-transfer" },
-    { name = "loguru" },
-    { name = "peft" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "vllm" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
-    { name = "click", specifier = ">=8.3.0" },
-    { name = "datasets", specifier = ">=4.2.0" },
-    { name = "hf-transfer", specifier = ">=0.1.9" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "peft", specifier = ">=0.17.1" },
-    { name = "pydantic", specifier = ">=2.12.2" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "vllm", specifier = ">=0.11.0" },
-]
-
-[[package]]
 name = "llguidance"
 version = "0.7.30"
 source = { registry = "https://pypi.org/simple" }
@@ -3488,6 +3459,35 @@ sdist = { url = "https://files.pythonhosted.org/packages/82/5a/36d2351206f4d8d87
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/33/d19e0763c34392ec956534536fa837c060495bfff31ed83452135ea7608d/vllm-0.11.0-cp38-abi3-manylinux1_x86_64.whl", hash = "sha256:3861c75ff2b12e24f6d179ff5c084d791b42ded8675d76c8706697c79f68cd62", size = 438217982, upload-time = "2025-10-04T01:39:32.382Z" },
     { url = "https://files.pythonhosted.org/packages/d7/bf/973444bb959fc7acbbeb3d226bd4d135dcd49b6af174b29aab1b50e2d710/vllm-0.11.0-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:52369c9ee949944354bdc7afc88ded2d1ed02b098bf90db06cf80098a19787b7", size = 401003969, upload-time = "2025-10-04T01:39:50.251Z" },
+]
+
+[[package]]
+name = "voice-inference"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
+    { name = "click" },
+    { name = "datasets" },
+    { name = "hf-transfer" },
+    { name = "loguru" },
+    { name = "peft" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "vllm" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
+    { name = "click", specifier = ">=8.3.0" },
+    { name = "datasets", specifier = ">=4.2.0" },
+    { name = "hf-transfer", specifier = ">=0.1.9" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "peft", specifier = ">=0.17.1" },
+    { name = "pydantic", specifier = ">=2.12.2" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "vllm", specifier = ">=0.11.0" },
 ]
 
 [[package]]

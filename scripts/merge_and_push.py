@@ -9,9 +9,9 @@ import os
 from llama_inference.logging import setup_logging
 from llama_inference.hf import configure_hf, get_token
 
-BASE_MODEL = "meta-llama/Llama-3.1-70B-Instruct"
-ADAPTER_REPO = "AccelerateScience/LLama-3.1-70B-Instruct-QLoRA-Bush"
-MERGED_REPO = "AccelerateScience/LLama-3.1-70B-Instruct-QLoRA-Bush-Merged"
+BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush"
+MERGED_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush-Merged"
 
 if __name__ == "__main__":
     setup_logging()
@@ -27,18 +27,17 @@ if __name__ == "__main__":
     if tokenizer.pad_token is None or tokenizer.pad_token != "<PAD>":
         tokenizer.add_special_tokens({"pad_token": "<PAD>"})
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype="bfloat16",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-    )
+    # bnb_config = BitsAndBytesConfig(
+    #     load_in_4bit=True,
+    #     bnb_4bit_compute_dtype="bfloat16",
+    #     bnb_4bit_use_double_quant=True,
+    #     bnb_4bit_quant_type="nf4",
+    # )
 
     logger.info("Loading base model from cache: {}", BASE_MODEL)
     base_model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         torch_dtype="bfloat16",
-        quantization_config=bnb_config,
         device_map={"": 0},     # no auto as want to avoid meta tensors
     )
 

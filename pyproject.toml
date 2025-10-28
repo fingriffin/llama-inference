@@ -1,5 +1,5 @@
 [project]
-name = "llama-inference"
+name = "voice-inference"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-infer = "llama_inference.cli.inference:main"
+infer = "voice_inference.cli.inference:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
