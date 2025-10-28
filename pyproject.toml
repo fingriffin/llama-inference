@@ -1,7 +1,7 @@
 [project]
 name = "voice-inference"
 version = "0.1.0"
-description = "Add your description here"
+description = "Inference repo for the VOICE project."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
