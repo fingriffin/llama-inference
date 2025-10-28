@@ -47,3 +47,9 @@ target-version = "py311"
 select = ["E", "F", "W", "D"]
 ignore = ["D203", "D212"]
 
+[tool.pydoclint]
+style = "sphinx"
+exclude = [
+  "src/voice_inference/config.py",
+]
+
