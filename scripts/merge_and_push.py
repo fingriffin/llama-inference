@@ -11,8 +11,8 @@ from voice_inference.hf import configure_hf, get_token
 from voice_inference.logging import setup_logging
 
 BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
-ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush"
-MERGED_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush-Merged"
+ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush/checkpoint-13"
+MERGED_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush-Checkpoint-13-Merged"
 
 if __name__ == "__main__":
     setup_logging()
