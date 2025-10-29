@@ -11,7 +11,8 @@ from voice_inference.hf import configure_hf, get_token
 from voice_inference.logging import setup_logging
 
 BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
-ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush/checkpoint-13"
+ADAPTER_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush"
+ADAPTER_SUBFOLDER = "checkpoint-13"
 MERGED_REPO = "AccelerateScience/LLama-3.1-8B-Instruct-Bush-Checkpoint-13-Merged"
 
 if __name__ == "__main__":
@@ -19,8 +20,9 @@ if __name__ == "__main__":
     configure_hf(BASE_MODEL)
     get_token()
 
-    logger.info("Downloading adapter from HF: {}", ADAPTER_REPO)
-    adapter_path = snapshot_download(repo_id=ADAPTER_REPO)
+    logger.info("Downloading adapter repo from HF: {}", ADAPTER_REPO)
+    repo_path = snapshot_download(repo_id=ADAPTER_REPO)
+    adapter_path = os.path.join(repo_path, ADAPTER_SUBFOLDER)
 
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, use_fast=True)
 
@@ -28,18 +30,11 @@ if __name__ == "__main__":
     if tokenizer.pad_token is None or tokenizer.pad_token != "<PAD>":
         tokenizer.add_special_tokens({"pad_token": "<PAD>"})
 
-    # bnb_config = BitsAndBytesConfig(
-    #     load_in_4bit=True,
-    #     bnb_4bit_compute_dtype="bfloat16",
-    #     bnb_4bit_use_double_quant=True,
-    #     bnb_4bit_quant_type="nf4",
-    # )
-
     logger.info("Loading base model from cache: {}", BASE_MODEL)
     base_model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         torch_dtype="bfloat16",
-        device_map={"": 0},  # no auto as want to avoid meta tensors
+        device_map={"": 0},  # no auto to avoid meta tensors
     )
 
     # Resize embeddings to match tokenizer
@@ -51,21 +46,20 @@ if __name__ == "__main__":
             current_vocab_size,
             new_vocab_size,
         )
-        # Skip the covariance computation which causes memory issues
         base_model.resize_token_embeddings(new_vocab_size, mean_resizing=False)
         base_model.config.vocab_size = new_vocab_size
 
-    logger.info("Loading LoRA adapter and merging into base weights...")
+    logger.info("Loading LoRA adapter from {}", adapter_path)
     model = PeftModel.from_pretrained(base_model, adapter_path)
+    logger.info("Merging adapter into base model weights...")
     model = model.merge_and_unload()
 
     # Get HF local cache path for the base model
-    hf_home = os.getenv("HF_HOME", "models")
-    model_dir = os.path.join(hf_home, BASE_MODEL)
+    hf_home = os.getenv("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+    model_dir = os.path.join(hf_home, BASE_MODEL.replace("/", "_"))
 
-    logger.info("Overwriting model weights directly at {}", model_dir)
+    logger.info("Saving merged model to {}", model_dir)
     model.save_pretrained(model_dir, safe_serialization=True)
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     tokenizer.save_pretrained(model_dir)
 
     logger.info("Pushing merged model to Hugging Face Hub...")

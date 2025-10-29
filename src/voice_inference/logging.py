@@ -1,5 +1,7 @@
 """Logging configuration for style-bench."""
 
+from __future__ import annotations
+
 import sys
 
 from loguru import Logger, logger
