@@ -55,7 +55,7 @@ htmlcov/
 
 # Project specific
 configs/*
-!configs/.gitkeep
+!configs/example.yaml
 
 models/*
 !models/.gitkeep
