@@ -16,6 +16,7 @@ dependencies = [
     "peft>=0.17.1",
     "types-pyyaml>=6.0.12.20250915",
     "zenml==0.91.0",
+    "wandb>=0.23.0",
 ]
 
 [project.scripts]

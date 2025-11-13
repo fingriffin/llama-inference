@@ -1,10 +1,13 @@
 """Configuration management for VOICE inference package."""
 
+import shutil
 from pathlib import Path
 from typing import Optional
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
+from wandb import Api
 
 
 class InferenceConfig(BaseModel):
@@ -53,3 +56,64 @@ def load_config(config_path: str) -> InferenceConfig:
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
     return InferenceConfig(**config_dict)
+
+def is_wandb_artifact(uri: str) -> bool:
+    """
+    Check if the given URI points to a Weights & Biases artifact.
+
+    :param uri: URI to check
+    :return: True if URI is a W&B artifact, False otherwise
+    """
+    # Local file exists → not an artifact
+    if Path(uri).expanduser().exists():
+        return False
+
+    # Must contain "/" and ":" in typical positions
+    return ("/" in uri) and (":" in uri)
+
+def load_config_from_wandb_artifact(uri: str) -> Path:
+    """
+    Load InferenceConfig YAML file from wandb artifact.
+
+    :param uri: wandb artifact URI i.e. entity/project/artifact:version
+    :return: path to downloaded YAML file
+    """
+    load_dotenv()
+    api = Api()
+
+    artifact = api.artifact(uri, type=None)
+
+    configs_dir = Path("configs")
+    configs_dir.mkdir(parents=True, exist_ok=True)
+
+    tmp_dir = Path(artifact.download())
+
+    yaml_files = list(tmp_dir.glob("*.yaml")) + list(tmp_dir.glob("*.yml"))
+    if not yaml_files:
+        raise RuntimeError(f"No YAML files found inside artifact: {uri}")
+    if len(yaml_files) > 1:
+        raise RuntimeError(f"Multiple YAML files found inside artifact: {uri}")
+
+    yaml_src = yaml_files[0]
+
+    # Ensure local configs directory exists
+    configs_dir = Path("configs")
+    configs_dir.mkdir(parents=True, exist_ok=True)
+
+    # Construct destination filename
+    artifact_name = uri.split("/")[-1].split(":")[0]
+    dest_path = configs_dir / f"{artifact_name}.yaml"
+
+    # Save YAML file
+    dest_path.write_text(yaml_src.read_text())
+
+    # Delete the downloaded artifact directory
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    # Delete the wandb artifacts/ folder
+    artifacts_dir = Path("artifacts")
+    if artifacts_dir.exists():
+        shutil.rmtree(artifacts_dir, ignore_errors=True)
+
+    return dest_path

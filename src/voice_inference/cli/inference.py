@@ -8,7 +8,11 @@ from datasets import load_dataset
 from loguru import logger
 from vllm import LLM, SamplingParams
 
-from voice_inference.config import load_config
+from voice_inference.config import (
+    is_wandb_artifact,
+    load_config,
+    load_config_from_wandb_artifact,
+)
 from voice_inference.hf import configure_hf, get_token
 from voice_inference.logging import setup_logging
 
@@ -33,9 +37,17 @@ def main(
     """Run inference with vLLM and specified configuration."""
     setup_logging(log_level, log_file)
 
+    # Detect local vs W&B artifact
+    if is_wandb_artifact(config_path):
+        logger.info("Detected W&B artifact config: {}", config_path)
+        config_file = load_config_from_wandb_artifact(config_path)
+        logger.info("Downloaded config to {}", str(config_path))
+    else:
+        config_file = Path(config_path).expanduser()
+
     try:
-        logger.info("Loading config from {}", config_path)
-        config = load_config(config_path)
+        logger.info("Loading config from {}", config_file)
+        config = load_config(str(config_file))
 
         # Override sampling parameters if provided via CLI
         if max_tokens is not None:
