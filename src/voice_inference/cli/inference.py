@@ -1,10 +1,13 @@
 """CLI for running inference with vLLM and specified configuration."""
 
 import json
+import os
 from pathlib import Path
 
 import click
+import wandb
 from datasets import load_dataset
+from dotenv import load_dotenv
 from loguru import logger
 from vllm import LLM, SamplingParams
 
@@ -27,14 +30,26 @@ OUTPUT_DIR = ROOT_DIR / "outputs"
 @click.option("--log-file", help="Log file path")
 @click.option("--max-tokens", type=int, help="Override max tokens for generation")
 @click.option("--n-gpus", type=int, help="Number of GPUs to use for inference")
+@click.option("--wandb-run-id", help="Attach to existing wandb run ID")
 def main(
     config_path: str,
     log_level: str,
     log_file: str,
     max_tokens: int,
-    n_gpus: int
+    n_gpus: int,
+    wandb_run_id: str,
 ) -> None:
-    """Run inference with vLLM and specified configuration."""
+    """
+    Run inference with vLLM and specified configuration.
+
+    :param config_path: Path to configuration file
+    :param log_level: Optional override for logging level
+    :param log_file: Optional override for logging file path
+    :param max_tokens: Optional override for max tokens for generation
+    :param n_gpus: Optional override for number of GPUs to use for inference
+    :param wandb_run_id: Option to attach to an existing wandb run ID.
+    :return: None
+    """
     setup_logging(log_level, log_file)
 
     # Detect local vs W&B artifact
@@ -69,16 +84,40 @@ def main(
     configure_hf(config.model)
     get_token()
 
+    # Configure W&B run
+    load_dotenv()
+    wandb.login(key=os.getenv("WANDB_API_KEY"))
+    if wandb_run_id:
+        run = wandb.init(
+            project=os.getenv("WANDB_PROJECT"),
+            entity=os.getenv("WANDB_ENTITY"),
+            id=wandb_run_id,
+            resume="must",
+        )
+    else:
+        run = wandb.init(
+            project=os.getenv("WANDB_PROJECT"),
+            entity=os.getenv("WANDB_ENTITY"),
+        )
+
     dataset = load_dataset(config.test_data, split=config.split)
 
-    prompts = [
-        next(msg["content"] for msg in example["messages"] if msg["role"] == "user")
+    # Prepare messages for each example (system + user only)
+    chat_prompts = [
+        [m for m in example["messages"] if m["role"] != "assistant"]
         for example in dataset
     ]
 
-    quantization = None
-    if config.quantization:
-        quantization = "bitsandbytes"
+    # Prepare reference answers in the same order
+    references = [
+        next(
+            (m["content"] for m in example["messages"] if m["role"] == "assistant"),
+            None
+        )
+        for example in dataset
+    ]
+
+    quantization = "bitsandbytes" if config.quantization else None
 
     logger.info("Instantiating model {}", config.model)
     llm = LLM(
@@ -93,24 +132,18 @@ def main(
         max_tokens=config.max_tokens,
     )
 
-    logger.info("Generating results for {} prompts", len(prompts))
+    logger.info("Running batched chat inference on {} prompts", len(chat_prompts))
+
+    # Single batched call
+    responses = llm.chat(chat_prompts, sampling_params)
+
+    # Format results
     outputs = []
-    for example in dataset:
-        # Use only system and user messages
-        messages = [m for m in example["messages"] if m["role"] != "assistant"]
-
-        # Run chat inference
-        response = llm.chat(messages, sampling_params)
-        text = response[0].outputs[0].text.strip()
-
-        ref = next(
-            (m["content"] for m in example["messages"] if m["role"] == "assistant"),
-            None,
-        )
-
+    for msgs, resp, ref in zip(chat_prompts, responses, references):
+        text = resp.outputs[0].text.strip()
         outputs.append(
             {
-                "messages": messages,
+                "messages": msgs,
                 "generated_response": text,
                 "reference_response": ref,
             }
@@ -123,3 +156,14 @@ def main(
         json.dump(outputs, f, ensure_ascii=False, indent=2)
 
     logger.success("Results successfully written to {}", output_path)
+
+    # Log results as wandb artifact
+    if wandb_run_id:
+        artifact = wandb.Artifact(
+            name=run.name + "-Results",
+            type="Results",
+        )
+        artifact.add_file(str(output_path))
+
+        run.log_artifact(artifact)
+        run.finish()
